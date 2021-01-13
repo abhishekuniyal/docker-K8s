@@ -1,0 +1,78 @@
+
+
+kubectl port-forward <pod_id> 8080:8080 -n <namespac>  : to connect to your pod from ur local machine
+now connect 127.0.0.1:8080
+
+*****Kubernetes**************
+-is an Orchestration technology
+-to manage 100's of containers.
+-has HA ,Scalabilty and Disaster Recovery
+
+Pod:	abstraction over the container.(so that k8s become indepenedent of container tchnology). now conta could be of docker/Rkt/etc
+	is ephimeral i.e can die and new dynamic IP will be assigned to this new POd. 
+	This is problem as you were working on a differ Ip and sudenly new Ip is assigned. This issue is resolved with the permanent Ip 	  solution called Service:
+
+Service: Permannent Ip address can be attached to Pod.
+	Lifecycle of pod& service is NOT connected . so even pod dies service *which was connected with outer services is not affected)
+	Service also works as a LoadBalancer. if3 instances of same pod is running service to decide which one to call
+Ingress: before reaching to service(As Db service u wont want to expose) , request will be reached to INGRESS (http/https)
+confgimaps/secreste:
+Volumes: as K8s doesnt manage the Data persistent, we are resposnsible to for that,
+
+Deployment: Blueprint for pods with replicas(how many pods to instantiate)
+	    abstraction over the pods
+Statefull sets: Now can i start multiple replicas of DB pod through deployment. NO, as DB has states
+		Statefull sets can scale up-down (replications) as finally data is written to a single DB in a manner the data should not 			become incosistent. this all is handlled by statefull sets.
+		One of common approach to not use DB in K8 cluster and access DB from outside k8 cluster.
+
+
+***************Kubernetes Architecture************************
+
+Master						Worker Nodes
+----------------------------------------------------------------------------------------------------------------------------------------------
+*ApiServer: 					  *Kublet    : responsible for sceduling the pods
+					  *Kube-proxy : responsible for forwarding the request (from service) to respective pods in an 								intelligent manner
+					  *Container Runtime : Docker /Rkt
+
+-----------------------------------------------------------------------------------------------------------------------------------
+|Schedule new Pod => API server => Scheduler =>where to put pod => Kublet
+|If any pod dies CONTROLLER Manager => Scheduler =>where to put pod => Kublet
+|----------------------------------------------------------------------------------------------------------------------------------
+
+*Kublet    : responsible for sceduling the pods
+*Kube-proxy : responsible for forwarding the request (from service) to respective pods in an intelligent manner
+*Container Runtime : Docker /Rkt
+
+*ApiServer: Cluster Gateway
+	    Acts as a gatkeeper Authentication
+	    whenever we want to create pod/deployment service etc will have to go through Apiserver.
+	    Every client (cmd line,ui,api) will have to connect with Api server
+*Scheduler: Scheduler to decide which Node to put the newly request for pod sent by ApiServer
+	    Scheduler just decide on which Node new Pod should be Schedule ==> But actually KUBLET to actually schedule/starts the pod
+*Controller Manager: Detect cluster state changes like crashing of pods
+		     request to starts a new pod
+*etcd : key-value Databases
+	cluster brain
+
+
+Layers of abstraction for Deployment is below
+   * Deployment manages a ReplicaSet
+   * ReplicaSet manages all the pods
+   * Pod is an abstraction of container
+   * Container
+
+So, everything below the Deployment is handled by Kubernetes. we just have to work with Deployment
+kubectl edit deployment <deployment-name> can give you complete information
+
+kubectl logs <deployment_name>  ==> to see the complete logs
+kubectl describe pod <pod_name> ==> to see the state change from started to running
+kubectl exec -it <podname> --bin/bash	==> inside 
+
+kubectl delete deployment <deploymentname>  => will delete pod and replpicaset
+kubectl get pods -o wide 
+
+kubectl apply -f <fie_name>.yaml
+
+kubect get secrets
+
+kubectl get all | grep iclear

@@ -1,0 +1,68 @@
+*************************deployment.yaml*************************************
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   labels:
+      app: ngnix
+spec:
+   strategy: rolling-update
+   relpicas:1
+   selector: 
+      matchLabels:
+         app: ngnix
+   template:
+      metadata:
+         labels:
+            app: ngnix
+      spec:
+         containers:
+         -name: ngnix
+          image: ngnix:1.16
+          ports:
+          -containerPort: 8080
+          env:
+          -name: MONGO_INIT_ROOT_USERNAME
+           valueFrom:
+              secretKeyRef:
+                 name: mongo-secret
+                 key: mongo-username
+	 -name: MONGO_DB_URL
+           valueFrom:
+              configMapKeyRef:
+                 name: mongodb-configmap
+                 key: database_url
+
+******************Service.yaml************************************************
+
+apiVersion: v1
+kind: service
+metadata: 
+   label:
+      app: ngnix
+spec:
+   selector:
+      app: ngnix
+   ports:
+      -protocol: TCP
+       port:80
+       targetPort: 8080
+      
+****************Secrets*****************************************************
+apiVersion: v1
+kind: Secret
+metadata:
+   name: mongo-secret
+type: Opaque
+data:
+   mongo-username: admin (better use echo -n 'admin' |base64 => a&f)C and use this base64 value)
+   mongo-password: admin
+   
+***************Config Maps*************************************************
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+   name: mongodb-configmap
+data:
+   database_url: mongodb-service
+   

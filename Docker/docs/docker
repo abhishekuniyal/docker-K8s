@@ -1,0 +1,135 @@
+Physical machines Vs Virtual machines 		Vs Containers
+H/w/os/liib 		H/w virtualization		OS virtualization
+			every Vm have own OS 		containers will share OS
+
+Containers is 
+	layres of images
+
+Images 	 		vs 	Containers
+actual package			actally starts the app
+artifact that can be moved	container env is created
+not running			running (container is the running environment for the image)
+				container has app image+ env configs+ file systems(temp dir etc)
+
+
+*************************************************************DockerFile**********************************************
+DockerFile is a bluePrint for building images
+e.g
+
+FROM alpine
+ENV MONGO_DB_USERNAME=admin (its better to use env in compose instead of tightly coupling to image)
+RUN mkdir -p/home/app       executes on container (run can execute any linux commands) (this example creates dir inside the container)
+COPY . /home/app            executes on host (copy from my host to container)
+CMD ["node","server.js"]     
+ENTRYPOINT ["sleep"]        ENTRY POINT command (run can be multiple But 1 cmd)
+
+(cmd vs entrypoint==> entryoint will be run with container intatntiation, CMD will be appended over the entrypoint command
+e.g ENTRPOINT["sleep"], CMD["10"] =~   sleep 10
+CMD can be overrided but only the latest will be picked, Entrpoint cant be overrided but can be used with CMD by cmd passing as arguments)
+
+save above file as Dockerfile (below command to create an IMAGE)
+docker build -t my-app:1.0 .
+docker images
+docker rmi <image_id>
+
+
+
+*************************************************Docker common commands********************************************************
+
+docker pull <image_name>:<tag_no>
+docker run <image_name>:<tag_no>
+docker run -d -p8082:8080 <image_name> --name beimage   ==> d for detached, 8082(localhost host port) , 8080(container image port) , so app can be accesed at localhost:8082
+
+docker ps				=> process/container running
+docker ps -a =>all running & stopped
+
+docker stop <conatinerId>
+docker start <conatinerId>
+docker rm <container_id>  => to delete the container
+
+helpful in debugging::
+docker logs <container_id>
+docker exec -it <container_id> /bin/bash   => will place u inside container (can ls and all)
+docker exec -it <container_id> /bin/sh
+
+docker network ls
+
+
+************************************************Docker Compose ***************************************************************
+if u have more than one docker images to run in a specific order, you can choose to create docker-compose file.
+
+docker run -d --name mongodb -p 27017:27017 -e MONGO-INITDB_ROOT_USERNAME=admin --net mongo-network mongoImage
+docker run -d --name mongo-express -p 8080:8080 -e MONGO-INITDB_ROOT_USERNAME=admin --net mongo-network mongoExpressImage
+
+above 2 docker can be wriiten in below docker-compose. create a file mongo-compose.yaml
+
+version:'3'
+services:
+   mongodb:
+      image:mongoImage
+      ports:
+	-27017:27017
+      environment:
+        -MONGO-INITDB_ROOT_USERNAME=admin
+      volumes:
+        - db-data:/var/lib/mysql/data
+   mongo-express:
+      image:mongoExpressImage
+      ports:
+	-8080:8080
+      environment:
+        -MONGO-INITDB_ROOT_USERNAME=admin
+volumes:
+   db-data
+      
+
+docker-compose takes care of creating a common-network.
+************command***************
+docker-compose -f mongo-compose.yaml
+docker-compose -f mongo-compose.yaml down
+
+
+*********************container registry******************************************************
+either images can be pushed to dockerhub whihc is public repo
+Or private repositories like Amazon container registery, Google container registery
+
+Image naming in docker registry is::
+regisryDOmain/imageName:tag
+
+aftre creating an image we will have to TAG the image(kind of rename, creates a copy) so that docker knows the full path where to store this image
+e.g docker tag mayapp:1.0 12212.dkr.ecr.eu-central-1.amazonaws.com/myapp:1.0
+
+*****************************************Docker Volumes*************************
+Used for Data persistence in docker
+if u have any Database/statefull applications
+
+when we need volume??
+
+Container is in Host
+container has Virtual File System (VFS)
+
+ -----------------------|
+|Host			|
+|   ----------------	|
+|	Container	|   |
+|   			|
+|			|
+|-----------------------
+
+
+SO, Folder in Physical host file system is MOUNTED into the virtual file system of Docker.
+Container writes at VFS and data automatically replicated to HOST File system
+
+****Volume types::
+**HOST VOLUME : decide where on the host file system the reference is made.
+	docker run -v /home/mount/data:/var/lib/mysql/data      (-v hostLocation:container VFS)
+**ANONYMOUS VOLUME: u dont specify host and docker by created in /var/lib/docker/volumes/random_hash/_data
+	docker run -v /var/lib/mysql/data 
+**NAMED VOLUME: same as Anonymous just u can reference with name .
+		u dont specify host and docker by created in /var/lib/docker/volumes/random_hash/_data
+		mostly used in prods
+	docker run -v name:/var/lib/mysql/data 
+	now u can refer location created by docker using name
+
+
+
