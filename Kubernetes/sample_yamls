@@ -42,10 +42,12 @@ metadata:
 spec:
    selector:
       app: ngnix
+   type: LoadBalancer
    ports:
       -protocol: TCP
        port:80
        targetPort: 8080
+       nodePort: 30000
       
 ****************Secrets*****************************************************
 apiVersion: v1
@@ -63,6 +65,53 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
    name: mongodb-configmap
+   namespace: my-namespace
 data:
    database_url: mongodb-service
-   
+
+********************************INgress without TLS******************************
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+   name: dashboard-ingress
+   namespace: my-namespace
+spec:
+   rules:
+   - host: dashboard.com
+     http:
+        paths:
+        - backend:
+             serviceName: my-service
+             serviceport: 80
+
+********************************START: INgress TLS******************************
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+   name: dashboard-ingress
+   namespace: my-namespace
+spec:
+   tls:
+   - host:
+     - dashboard.com
+     secretName: myapp-secret-tls
+   rules:
+   - host: dashboard.com
+     http:
+        paths:
+        - backend:
+             serviceName: my-service
+             serviceport: 80
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+   name: myapp-secret-tls
+   namespace: default
+type: kubernetes.io/tls
+data:
+   tls.cert: <base64 encoded cert value>
+   tls.key:  <base64 encoded key value>
+
+********************************END: INgress TLS******************************

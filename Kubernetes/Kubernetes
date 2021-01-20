@@ -30,9 +30,9 @@ Statefull sets: Now can i start multiple replicas of DB pod through deployment. 
 
 Master						Worker Nodes
 ----------------------------------------------------------------------------------------------------------------------------------------------
-*ApiServer: 					  *Kublet    : responsible for sceduling the pods
-					  *Kube-proxy : responsible for forwarding the request (from service) to respective pods in an 								intelligent manner
-					  *Container Runtime : Docker /Rkt
+*ApiServer: 				  *Kublet    : responsible for sceduling the pods
+*Scheduler				  *Kube-proxy : responsible for forwarding the request (from service) to respective pods in an *Controller manager						intelligent manner
+*etcd 					  *Container Runtime : Docker /Rkt
 
 -----------------------------------------------------------------------------------------------------------------------------------
 |Schedule new Pod => API server => Scheduler =>where to put pod => Kublet
@@ -76,3 +76,82 @@ kubectl apply -f <fie_name>.yaml
 kubect get secrets
 
 kubectl get all | grep iclear
+
+****Services*****
+external: using LoadBalancer or NodePort service : noeport : 3000-32767
+internal: ClusterIp service
+
+****K8 namespaces**************
+cluster inside a cluster
+default name spaces:
+ kubectls get namespace
+  kube-system : this nmaespace has system process, master and kubectl processes. we DONOT create or Modify this
+  kube-pulic  : this nmaespace has publically accessible data. It has a config map which contains cluster info and can be get without any 			authentication. e.g kubectl get cluster-info => gives info w/o any authentication
+  kube-node-lease: this nmaespace contains heartBEat of the nodes. So, each node has associated leaseObject in namespace. determine 			   availability of the node
+  default:   resources we created are located here.
+
+creating new namespace: kubectl create namespace my-namespace. can be created vua yaml filejustadd namespace:my-namespace under the "metadata" tag
+
+shared services from other namespaces has to be referenced with my_db_servce.database (serice.namespace)
+Volumes and Node cant be restricted to a single namespace, tey will be available globally (can check kubect api-resources --namespaced=false
+
+*******************INGRESS***************************
+
+But as external Service exposed directly to external world, we cant use this in production env .
+we use INGRESS for this.
+
+So ingress will redirect calls from outerworld to internal SERVICE(clusterip) based on the ingress rules
+host : in ingress file must map the ENTRYPOINT IP (in our cse nginx server OUTSIDE kubernets cluster)
+
+INgress :
+Ingress Controller: Implementation for Ingresss
+		     Evaluate and process ingress rule
+ 		     need to install in kubernetes cluster
+		     Entry point in the cluster
+
+Also, u have to map dashboard.com host with the IP
+once u create this ingress kubectl apply -f ingress.yaml
+and get the IP assigned . that IP needs to be configured with the host
+
+use sudo vim /etc/hosts and add the key value
+
+Default BE service: if path not found can be redirected to default BE service for common messgae . u can cree a defalt BE nd defau;t pod for the same.sudo vim /etc/hosts
+   
+
+http in ingress resource means ==> the communication from ingresss controller to Service (shouldnt be confused with http://www.dash.com)
+
+Configuring TLS certificate in ingress
+communication between ingress controller and service can be secured and move to TLS using certificates
+
+steps to add tls in ingress
+   add tls in specs and add secretName
+   create secret which contains tls certificate and type as tls
+
+
+*********************************************Helm******************************************
+Helm is a package manager for kubernetes
+   to package yaml files and distribute them in public and private repositories
+
+some commonly used apps like elk,my-sql, prometheus etc have helm charts available , so that u dont have to write and manage yaml for those.
+helm hub
+helm private registry
+helm chart structure
+myChart/
+  Chart.yaml
+  values.yaml
+  charts/
+  templates/
+
+helm install <chartname>
+clien - Tiller (removed in helm 3)
+
+******************************************Kubernetes VOLUMES********************************
+
+* persistent Volume
+  - acluster resource
+  -
+
+* Persistent Volume Claim
+  pod -> has volumes and PVC name --> connects to PVC ---> connects to PV
+
+* Storage class:
