@@ -1,4 +1,5 @@
 
+kubectl label namespace default istio-injection=enabled
 
 kubectl port-forward <pod_id> 8080:8080 -n <namespac>  : to connect to your pod from ur local machine
 now connect 127.0.0.1:8080
