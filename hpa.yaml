@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   name: iclear-app
+   namespace: kube-system
+spec:
+   selector:
+      matchLables:
+         app: iclear-app
+   replicas: 1
+   template: 
+      metadata:
+        label:
+           app: iclear-app
+      spec:
+        containers:
+        -name: iclear-app
+         image: docker.io/dtr1.1/imageName:v1.0 
+	 ports:
+ 	 -containerPort: 80
+	 resources:
+	   request:
+	      cpu: 500m
+	      memory: 50Mib
+	   limit:
+	      cpu: 1000m
+	      memory: 50Mib	
+
+
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+   name: iclear-app
+spec:
+   scaleTargetRef:
+     apiVersion: apps/v1
+     kind: Deployment		==> tells to impose hpa on this deployment name 
+     name: iclear-app
+   minReplicas: 1
+   maxReplicas: 10
+   targetCPUUtilizationPercentage: 50
+
+kubectl get hpa
+
+check if metric-server is isntalled??
+kubectl get deployment metrics-server -n kube-systemmax
+kubectl apply -f kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+
+**************CLUSTER AUTOSCALING******************
+once max pods for a node ha already been spawned by hpa, after that a new node is required and custer auscaling kicks in.
+Cluster autoscaling is outside the kubernetes scope and depends on cloud provider.
+
+for GCP below command is required while creating the CLUSTER.
+gcloud container cluster create petshopautoscaledemo --zone=us-central-a --num-nodes=2 --ENABLE-AUTOSCALING --MIN-NODES=2 --MAX-NODE=10

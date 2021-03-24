@@ -1,0 +1,83 @@
+RBAC in kubernetes::
+
+A Role will be associated with a Namespace
+and User can have a role.
+
+Rules in Role categgaroized as below::
+1.) API GROUPS
+    -core api
+    -extensions
+    -apps
+    -networking
+2.) Resources
+    -pod
+    -deployment
+    -replicaset
+3.) Verbs
+    get, list, watch , update, delete
+
+
+**********************Kubctl commands to fllow********************
+kubectl get ns
+kubectl create ns finance
+
+//create private key  using openssl for user john
+openssl genrsa -out john.key 2048
+
+//create certificate signing request csr
+openssl req -new -key john.key -out john.csr -subj "/CN=john/O=finance"
+
+//Now john needs the CA to sign the csr of John. for that we need Cetificate Authority prive kay and signature
+//for that go to ur master Node cd /etc/kubernetes/pki
+cd /etc/kubernetes/pki
+ls ==> ca.crt and ca.key
+scp roort@kmaster /etc/kubernetes/pki/ca.{crt,key} .
+
+//Now sign the john csr with CA certiifcate and key
+openssl x509 -req -in john.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out john.crt -days 365 => genereates john.crt
+
+//Now we have both jOhn certificate and john private key
+
+/*Now John needs kubeCONFIG file so that he can be authenticated while fetching info from kubernetes
+THere are 2 ways for that
+way1 : ADMIn sends the john.crt and john private key to John and John creates kubeconfig file for himeself.
+Way2: Admin creates a kubeconfig file for john using john certificate and private key and send kubeconfig to john
+*/
+
+Approach 1::::::::::
+kubectl kubeconfig view ==> to check server
+//set a new cluster kubernetes
+kubectl --kubeconfig john.kubeconfig config set-cluster kubernetes --server https://172.12.34.23:6443 --certificate-authority ca.cert
+//add user to this kubeconfig
+kubectl --kubeconfig john.kubeconfig config set-credential john --client-certificate /home/john/john.cert --client-key /home/john/john.key
+//Now set the context
+kubectl --kubeconfig john.kubeconfig config set-context john-kubernetes --current-context john-kubernetes --cluster kubernetes --namespace finance --user john
+this creates john.kubeconfig
+//Now copy this config to home config directory
+ now kubectl --kubeconfig get pods
+LISTING pods are forbidden  ==> as john doesnt have any roles yet for finance namespace
+
+Approach 1::::::::::
+edit an existing kubeconfig 
+cp ~/.kube/config john.kubeconfig
+vi john.kubeconfig
+chnge context, user and clientkey and client certificates to john cert and key in base64 use below
+
+cat john.cert |base64 -w0
+
+and send this john.kubeconfig to john and jhon will copy this in kubeconfig and we have kubeconfg set up
+
+CREATING a ROLE***************
+
+kubectl create role john-finance --verb=get,list --resource=pods --namsespace finance
+role created
+u can see the file using
+kubectl -n finance get role john-finance -o yaml
+
+CREATEING a ROLE BINDING
+kubectl create rolebinding john-finance-rolebinding --role=john-finance --user=john--namespace finance
+kubectl -n finance get rolebinding john-finance-rolebinding -o yaml
+
+
+ROLE       			Cluster role
+namespacific			Not namespecific
