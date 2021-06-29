@@ -80,7 +80,8 @@ kubectl get all | grep iclear
 
 ****Services*****
 external: using LoadBalancer or NodePort service : noeport : 3000-32767
-internal: ClusterIp service
+internal: ClusterIp service,
+	   headless service : https://dev.to/kaoskater08/building-a-headless-service-in-kubernetes-3bk8
 
 ****K8 namespaces**************
 cluster inside a cluster
