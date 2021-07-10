@@ -54,6 +54,12 @@ docker exec -it <container_id> /bin/sh
 
 docker network ls
 
+docker system prune -a => remove all dangling resources images/cont/vol/network
+docker images prune
+docker rmi <image_id>
+docker rm <cont_id>
+docker run --rm inage_name
+docker volume rm volume_name
 
 ************************************************Docker Compose ***************************************************************
 if u have more than one docker images to run in a specific order, you can choose to create docker-compose file.
