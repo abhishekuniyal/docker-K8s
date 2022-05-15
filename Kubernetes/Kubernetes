@@ -11,7 +11,7 @@ now connect 127.0.0.1:8080
 
 Pod:	abstraction over the container.(so that k8s become indepenedent of container tchnology). now conta could be of docker/Rkt/etc
 	is ephimeral i.e can die and new dynamic IP will be assigned to this new POd. 
-	This is problem as you were working on a differ Ip and sudenly new Ip is assigned. This issue is resolved with the permanent Ip 	  solution called Service:
+	This is problem as you were working on a differ Ip and sudenly new Ip is assigned. This issue is resolved with the permanent Ip  solution is  called Service:
 
 Service: Permannent Ip address can be attached to Pod.
 	Lifecycle of pod& service is NOT connected . so even pod dies service *which was connected with outer services is not affected)
@@ -23,7 +23,7 @@ Volumes: as K8s doesnt manage the Data persistent, we are resposnsible to for th
 Deployment: Blueprint for pods with replicas(how many pods to instantiate)
 	    abstraction over the pods
 Statefull sets: Now can i start multiple replicas of DB pod through deployment. NO, as DB has states
-		Statefull sets can scale up-down (replications) as finally data is written to a single DB in a manner the data should not 			become incosistent. this all is handlled by statefull sets.
+		Statefull sets can scale up-down (replications) as finally data is written to a single DB in a manner the data should not become incosistent. this all is handlled by statefull sets.
 		One of common approach to not use DB in K8 cluster and access DB from outside k8 cluster.
 
 
@@ -32,7 +32,8 @@ Statefull sets: Now can i start multiple replicas of DB pod through deployment. 
 Master						Worker Nodes
 ----------------------------------------------------------------------------------------------------------------------------------------------
 *ApiServer: 				  *Kublet    : responsible for sceduling the pods
-*Scheduler				  *Kube-proxy : responsible for forwarding the request (from service) to respective pods in an *Controller manager						intelligent manner
+*Scheduler				  *Kube-proxy : responsible for forwarding the request (from service) to respective pods in an 
+*Controller manager						intelligent manner
 *etcd 					  *Container Runtime : Docker /Rkt
 
 -----------------------------------------------------------------------------------------------------------------------------------
