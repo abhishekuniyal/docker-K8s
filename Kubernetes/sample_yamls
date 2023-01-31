@@ -115,3 +115,31 @@ data:
    tls.key:  <base64 encoded key value>
 
 ********************************END: INgress TLS******************************
+
+
+**************************Type of Probes***************
+  - Liveness probe  --if container is good (no deadlock in app) 
+  - Readiness probe -- if pod is read for serving the data
+  - Startup probe -- If application(e.g springboot app) is fine
+  could be http check or file/ssh check
+  under the deployment spec.container
+ 	 readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10
