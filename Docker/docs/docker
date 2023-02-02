@@ -33,7 +33,21 @@ docker images
 docker rmi <image_id>
 
 
+****Docker Multi Stage Build
+  - As we dont need jdk just jre for running the final app to be deployed
+  - As we dont require maven to run file
+  - so its better to create a final docker artificat with only must required dependency and with much less size
+  
+#Build Stage
+FROM maven AS build
+WORKDIR /app
+COPY myapp /app
+RUN mvn package
 
+#RUN Stage
+FROM alpine
+COPY --from=build /app/target/app-file.jar /usr/local/app 
+ENTRYPOINT ["java -jar", "/usr/local/app/app-file.jar"]
 *************************************************Docker common commands********************************************************
 
 docker pull <image_name>:<tag_no>
