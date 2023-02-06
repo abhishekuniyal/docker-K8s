@@ -1,0 +1,331 @@
+https://jhooq.com/terraform-index/
+
+provider "aws{
+	region = "eu-west-1",
+	access_key=""
+	secret_key=""
+}
+
+
+- Terraform Localr
+		- ex u want to change tag name 
+		
+		local{
+			staging_env="staging"
+		}
+		resource "aws_vpc" "staging-vpc"{
+			cidr_block="10.5.0.0/16"
+			
+			tags= {
+				Name="${local.staging_env}-vpc-tag"
+			}
+		}
+		resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			
+			tags= {
+				Name="${local.staging-env}-vpc-tag"
+			}
+		}
+		
+		output "my_console"{
+			value = aws_instance.ec2-example.public_ip
+			sensitive=true
+		}
+- Terraform Loop/for-each/count
+		- ex u want to create 3 users
+		
+		variable "user_names"{
+			description="IAM user"
+			type = list(string)
+			default = ["user1","user2","user3"]
+		}
+		
+		resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			
+			count=1
+			tags= {
+				Name="${local.staging-env}-vpc-tag"
+			}
+		}
+		
+		/*count***/
+		resource "aws_iam_user" "example"{
+				count = length(var.user_names)
+				name = var.user_names[count.index]
+				
+		}
+		/*For-each ***/
+		resource "aws_iam_user" "example"{
+				for_each = var.user_names
+				name = each.value
+				
+		}
+		/*For Loop ***/
+		resource "aws_iam_user" "example"{
+				name = [for name in var.user_names : name]
+				
+		}
+		
+-Terraform Provisioner (not recommended as u will use a lot of bash script)
+	- file					vendor provisioner -chef, habitat, puppet, salt-masterless
+	- local
+	- remote
+	
+	-file
+		- If we want to move file from local dev machine to server
+		-e.g we need to transfer file to an ec2 instance
+			- u can create ec2 and add below code during creation. additionally will have to add connection as file transfer 
+				can only be done at ssh 22 with ec2 . create key-pair and create an ingress with 22 port.
+		provisioner "file"{
+			source="/home/local/file.txt"
+			destination="/home/local/file.txt"
+		}
+	
+	-local-exec
+		- Local exec only affect the local dev
+		-e.g we want to create a new file in Local only
+			
+		provisioner "local-exec"{
+			command="touch /home/local/file.txt"
+		}
+		
+	-remote-exec
+		- remote exec only affect the Remote server(aws/gcp)
+		-e.g we want to create a new file in AWS/GCP instance only
+			
+		provisioner "remote-exec"{
+			inline = [
+				"touch file.txt",
+				"echo helloworld remote >> file.txt",
+			]
+		}
+-Terraform Dynamic blocks
+	- Lets say you have create Ingress rule for your aws ec2 and want to open port 22, 443 and may be more later only	
+	- for that u will have to create multiple Ingress rule in the code
+	- here dynamic can help 
+	-e.g 
+		locals {
+		   ingress_rules = [{
+			  port        = 443
+			  description = "Ingress rules for port 443"
+		   },
+		   {
+			  port        = 80
+			  description = "Ingree rules for port 80"
+		   }]
+		}
+
+		resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			key_name="aws_key"
+			vpc_security_group_ids=[aws_security_group.main.id]
+		}
+		resource "aws_security_group" "main" {
+		   name   = "resource_with_dynamic_block"
+		   vpc_id = data.aws_vpc.main.id
+
+		   dynamic "ingress" {
+			  for_each = local.ingress_rules
+
+			  content {
+				 description = ingress.value.description
+				 from_port   = ingress.value.port
+				 to_port     = ingress.value.port
+				 protocol    = "tcp"
+				 cidr_blocks = ["0.0.0.0/0"]
+			  }
+		   }
+
+		   tags = {
+			  Name = "AWS security group dynamic block"
+		   }
+		}
+		resource "aws_key_pair" "deployer"{
+			key_name="aws_key"
+			public_key="ssh-rsa asasass"
+		}
+- Terraform Module
+		- We can create multiple modules and use them in main.tf
+		- e.g module 1 has main.tf, which creates httpd server
+		- below is main.tf (from project)
+		
+		main.tf
+		
+		module "module1"{
+			source = "..//module-1"
+		}
+		
+		module "module2"{
+			source = "..//module-2"
+		}
+- Terraform Workspace
+     - Like in code versioning we can swtich from dev to test
+	 - Similarly if you want to create a Ec2 instance but t2.nano in Dev and T2.micro in Stage
+	    - But using the same main.tf (same codebase for both) 
+	
+	e.g
+	- terraform workspace list
+		* default
+	- terraform workspace new dev
+	  terraform workspace new test
+		  default
+		  dev
+		* test 
+	- terraform workspace show //current workspace
+	    test
+	- terraform workspace select dev //command to switch workspaces
+	-- ${terraform.workspace} //interpolation to use the name of current workspace
+		
+		
+		local{
+			instance_name="${terraform.workspace}-instance"
+		}
+		
+		resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			key_name="aws_key"
+			tags= {
+				Name="${local.instance_name}"
+			}
+		}
+		
+- Terraform datasource
+	- when we want to get information back from external sources like Cloud resources, database, files in local e.g if we want to know my ec2 publicIP/instanceID
+	
+		resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			key_name="aws_key"
+			tags= {
+				Name="${local.instance_name}"
+			}
+		}
+		data "aws_instance" "datasource-example"{
+			filter{
+				name="tag:Name"
+				values= ["instance name"]
+			}
+			depends_on = [
+				"aws_instance.ec2-example"{
+			]
+		}
+		output "fetchedinstance-name-from-aws"{
+			value=data.aws_instance.datasource-example
+			}
+
+-Terraform state
+	- state file saves the state of ur project infra creation
+	- local state file is stored by default
+	- but if u r working in a team , all must be in sync.
+	- u can use remote state file
+	
+	
+	terraform {
+		backend "gcs" {
+		  bucket = "my-tfstate-bucket-td"   # GCS bucket name to store terraform tfstate
+		  prefix = "first-app"           # Update to desired prefix name. Prefix name should be unique for each Terraform project having same remote state bucket.
+		  project = "project_id"
+		  }
+		}
+		
+In GCS state locking is inbuilt but in aws u need to use dynamodb_table, so that multiple person are not able to update same state file
+	terraform {
+		backend "aws" {
+		  bucket = "my-tfstate-bucket-td"   # GCS bucket name to store terraform tfstate
+		  key = "first-app"           # Update to desired prefix name. Prefix name should be unique for each Terraform project having same remote state bucket.
+		  region = "eu-west-1"
+		  dynamodb_table="d_tale" // create table with colm Key as LOCKID
+		  }
+		}
+					
+	- if u want to sync ur local state file from rmote state
+		terraform state pull
+		terraform state push -- this is not recommended
+		
+- Terraform debug
+	- export TF_LOG=DEBUG
+	- export TF_LOG_PATH="/usr/debug.log"
+
+- Validation 		
+		
+		resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			key_name="aws_key"
+			tags= {
+				Name="${local.instance_name}"
+			}
+			
+			validation{
+				condition=can(regex("T2.(nano|micro)")), var.instance_type)
+				error_message="invalid instance type
+			}
+		}
+- Terraform upgrades
+		- u can use terraform version manager
+		- u need to use tfenv
+		then tfenv use 1.2.6
+		
+		
+- Terraform template
+
+- Terraform null_resource
+	- It will Do Nothing ...means nothing will be created 
+	
+	resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			key_name="aws_key"
+			tags= {
+				Name="${local.instance_name}"
+			}
+			
+			validation{
+				condition=can(regex("T2.(nano|micro)")), var.instance_type)
+				error_message="invalid instance type
+			}
+		}
+	resource "null_resource" "simple_ex"{
+		trigger={ \\Trigger is optional
+			id=aws_instance.ec2-example.id
+		}
+		provisioner "local-exec"{
+			command="echo hello"
+		}
+	}
+		
+		
+-Terraform Import
+	- to create terraform script from already cloud resources
+	- terraform import <RESOURCE_TYPE>.<RESOURCE_NAME> <RESOURCE_ID>
+		terraform import aws_instance.ec2_example i-1235
+		
+-Terraform user_data block
+	- if you want to initial /boot data setup for ur machine e.g install httpd,
+	
+	resource "aws_instance" "ec2-example"{
+			ami="asasas"
+			instance_type="t2.micro"
+			key_name="aws_key"
+			tags= {
+				Name="${local.instance_name}"
+			}
+			
+			user_data = <<-EOF
+						#!/bin/bash
+						echo "hello"> hello.txt
+						EOF
+						
+		}
+	- you can also refer a seperate file using below example
+			user_data = "${file('install_apache.sh')}"
+			
+			
+		
+terragrunt to be updated later
